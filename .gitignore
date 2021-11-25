@@ -1,0 +1,9 @@
+node_modules
+
+/.cache
+/build
+/public/build
+/server/build
+
+.cdk.staging
+cdk.out

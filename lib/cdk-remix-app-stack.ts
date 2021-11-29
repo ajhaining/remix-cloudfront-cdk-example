@@ -1,5 +1,5 @@
 import { Bucket } from "aws-cdk-lib/lib/aws-s3";
-import { BucketDeployment, Source } from "aws-cdk-lib/lib/aws-s3-deployment";
+import { BucketDeployment, CacheControl, Source } from "aws-cdk-lib/lib/aws-s3-deployment";
 import { Construct } from "constructs";
 import { Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/lib/aws-lambda-nodejs";
@@ -82,6 +82,7 @@ export class CdkRemixAppStack extends Stack {
       distribution,
       prune: true,
       sources: [Source.asset("public")],
+      cacheControl: [CacheControl.maxAge(Duration.days(365)), CacheControl.sMaxAge(Duration.days(365))],
     });
   }
 }

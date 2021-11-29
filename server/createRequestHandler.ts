@@ -40,8 +40,6 @@ export function createRequestHandler({
   return async (event, _context) => {
     let request = createRemixRequest(event);
 
-    console.log(JSON.stringify(request))
-
     let loadContext = typeof getLoadContext === "function" ? getLoadContext(event) : undefined;
 
     let response = (await handleRequest(request as unknown as Request, loadContext)) as unknown as NodeResponse;
@@ -49,8 +47,8 @@ export function createRequestHandler({
     return {
       status: String(response.status),
       headers: createCloudFrontHeaders(response.headers),
-      bodyEncoding: "base64",
-      body: Buffer.from(await response.text()).toString("base64"),
+      bodyEncoding: "text",
+      body: await response.text(),
     };
   };
 }
@@ -71,10 +69,17 @@ export function createRemixHeaders(requestHeaders: CloudFrontHeaders): NodeHeade
 
 export function createCloudFrontHeaders(responseHeaders: NodeHeaders): CloudFrontHeaders {
   let headers: CloudFrontHeaders = {};
-
-  responseHeaders.forEach((value, key) => {
-    headers[key] = [...(headers[key] || []), { key: key, value }];
-  });
+  let rawHeaders = responseHeaders.raw()
+  for (let key in rawHeaders) {
+    let value = rawHeaders[key]
+    if (Array.isArray(value)) {
+      for (let v of value) {
+        headers[key] = [...(headers[key] || []), { key, value: v }];
+      }
+    } else {
+      headers[key] = [...(headers[key] || []), { key, value }];
+    }
+  }
 
   return headers;
 }
@@ -82,13 +87,9 @@ export function createCloudFrontHeaders(responseHeaders: NodeHeaders): CloudFron
 export function createRemixRequest(event: CloudFrontRequestEvent): NodeRequest {
   const request = event.Records[0].cf.request;
 
-  console.log(JSON.stringify(request));
-
   let host = request.headers["host"] ? request.headers["host"][0].value : undefined;
   let search = request.querystring.length ? `?${request.querystring}` : "";
   let url = new URL(request.uri + search, `https://${host}`);
-
-  console.log(url.toString());
 
   return new NodeRequest(url.toString(), {
     method: request.method,

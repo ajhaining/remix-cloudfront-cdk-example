@@ -1,14 +1,14 @@
-import { Bucket } from "aws-cdk-lib/lib/aws-s3";
+import { Bucket } from "aws-cdk-lib/aws-s3";
 import {
   BucketDeployment,
   CacheControl,
   Source,
-} from "aws-cdk-lib/lib/aws-s3-deployment";
+} from "aws-cdk-lib/aws-s3-deployment";
 import { Construct } from "constructs";
 import { Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
-import { NodejsFunction } from "aws-cdk-lib/lib/aws-lambda-nodejs";
-import { RetentionDays } from "aws-cdk-lib/lib/aws-logs";
-import { S3Origin } from "aws-cdk-lib/lib/aws-cloudfront-origins";
+import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
+import { RetentionDays } from "aws-cdk-lib/aws-logs";
+import { S3Origin } from "aws-cdk-lib/aws-cloudfront-origins";
 import {
   AllowedMethods,
   CachePolicy,
@@ -20,7 +20,7 @@ import {
   OriginRequestPolicy,
   OriginRequestQueryStringBehavior,
   ViewerProtocolPolicy,
-} from "aws-cdk-lib/lib/aws-cloudfront";
+} from "aws-cdk-lib/aws-cloudfront";
 
 export class CdkRemixAppStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {

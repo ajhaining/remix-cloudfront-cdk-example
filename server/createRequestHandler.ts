@@ -1,30 +1,31 @@
 import { URL } from "url";
-import { Headers as NodeHeaders, Request as NodeRequest, formatServerError } from "@remix-run/node";
-import type { CloudFrontRequestEvent, CloudFrontRequestHandler, CloudFrontHeaders } from "aws-lambda";
-import type { AppLoadContext, ServerBuild, ServerPlatform } from "@remix-run/server-runtime";
+import {
+  Headers as NodeHeaders,
+  Request as NodeRequest,
+  formatServerError,
+} from "@remix-run/node";
+import type {
+  CloudFrontRequestEvent,
+  CloudFrontRequestHandler,
+  CloudFrontHeaders,
+} from "aws-lambda";
+import type {
+  AppLoadContext,
+  ServerBuild,
+  ServerPlatform,
+} from "@remix-run/server-runtime";
 import { createRequestHandler as createRemixRequestHandler } from "@remix-run/server-runtime";
 import type { Response as NodeResponse } from "@remix-run/node";
 import { installGlobals } from "@remix-run/node";
 
 installGlobals();
 
-/**
- * A function that returns the value to use as `context` in route `loader` and
- * `action` functions.
- *
- * You can think of this as an escape hatch that allows you to pass
- * environment/platform-specific values through to your loader/action.
- */
 export interface GetLoadContextFunction {
   (event: CloudFrontRequestEvent): AppLoadContext;
 }
 
 export type RequestHandler = ReturnType<typeof createRequestHandler>;
 
-/**
- * Returns a request handler for CloudFront Lambda-at-Edge that serves the response using
- * Remix.
- */
 export function createRequestHandler({
   build,
   getLoadContext,
@@ -37,12 +38,16 @@ export function createRequestHandler({
   let platform: ServerPlatform = { formatServerError };
   let handleRequest = createRemixRequestHandler(build, platform, mode);
 
-  return async (event, _context) => {
+  return async (event, context) => {
     let request = createRemixRequest(event);
 
-    let loadContext = typeof getLoadContext === "function" ? getLoadContext(event) : undefined;
+    let loadContext =
+      typeof getLoadContext === "function" ? getLoadContext(event) : undefined;
 
-    let response = (await handleRequest(request as unknown as Request, loadContext)) as unknown as NodeResponse;
+    let response = (await handleRequest(
+      request as unknown as Request,
+      loadContext
+    )) as unknown as NodeResponse;
 
     return {
       status: String(response.status),
@@ -53,7 +58,25 @@ export function createRequestHandler({
   };
 }
 
-export function createRemixHeaders(requestHeaders: CloudFrontHeaders): NodeHeaders {
+export function createCloudFrontHeaders(
+  responseHeaders: NodeHeaders
+): CloudFrontHeaders {
+  let headers: CloudFrontHeaders = {};
+  let rawHeaders = responseHeaders.raw();
+
+  for (let key in rawHeaders) {
+    let value = rawHeaders[key];
+    for (let v of value) {
+      headers[key] = [...(headers[key] || []), { key, value: v }];
+    }
+  }
+
+  return headers;
+}
+
+export function createRemixHeaders(
+  requestHeaders: CloudFrontHeaders
+): NodeHeaders {
   let headers = new NodeHeaders();
 
   for (let [key, values] of Object.entries(requestHeaders)) {
@@ -67,27 +90,12 @@ export function createRemixHeaders(requestHeaders: CloudFrontHeaders): NodeHeade
   return headers;
 }
 
-export function createCloudFrontHeaders(responseHeaders: NodeHeaders): CloudFrontHeaders {
-  let headers: CloudFrontHeaders = {};
-  let rawHeaders = responseHeaders.raw()
-  for (let key in rawHeaders) {
-    let value = rawHeaders[key]
-    if (Array.isArray(value)) {
-      for (let v of value) {
-        headers[key] = [...(headers[key] || []), { key, value: v }];
-      }
-    } else {
-      headers[key] = [...(headers[key] || []), { key, value }];
-    }
-  }
-
-  return headers;
-}
-
 export function createRemixRequest(event: CloudFrontRequestEvent): NodeRequest {
-  const request = event.Records[0].cf.request;
+  let request = event.Records[0].cf.request;
 
-  let host = request.headers["host"] ? request.headers["host"][0].value : undefined;
+  let host = request.headers["host"]
+    ? request.headers["host"][0].value
+    : undefined;
   let search = request.querystring.length ? `?${request.querystring}` : "";
   let url = new URL(request.uri + search, `https://${host}`);
 

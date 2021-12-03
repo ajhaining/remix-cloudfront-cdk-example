@@ -1,5 +1,9 @@
 import { Bucket } from "aws-cdk-lib/lib/aws-s3";
-import { BucketDeployment, CacheControl, Source } from "aws-cdk-lib/lib/aws-s3-deployment";
+import {
+  BucketDeployment,
+  CacheControl,
+  Source,
+} from "aws-cdk-lib/lib/aws-s3-deployment";
 import { Construct } from "constructs";
 import { Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/lib/aws-lambda-nodejs";
@@ -28,7 +32,10 @@ export class CdkRemixAppStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    const assetsBucketOriginAccessIdentity = new OriginAccessIdentity(this, "AssetsBucketOriginAccessIdentity");
+    const assetsBucketOriginAccessIdentity = new OriginAccessIdentity(
+      this,
+      "AssetsBucketOriginAccessIdentity"
+    );
 
     const assetsBucketS3Origin = new S3Origin(assetsBucket, {
       originAccessIdentity: assetsBucketOriginAccessIdentity,
@@ -42,7 +49,7 @@ export class CdkRemixAppStack extends Stack {
       },
       entry: "server/index.ts",
       logRetention: RetentionDays.THREE_DAYS,
-      memorySize: 512,
+      memorySize: 1024,
       timeout: Duration.seconds(10),
     });
 
@@ -59,11 +66,15 @@ export class CdkRemixAppStack extends Stack {
           },
         ],
         origin: assetsBucketS3Origin,
-        originRequestPolicy: new OriginRequestPolicy(this, "OriginRequestPolicy", {
-          headerBehavior: OriginRequestHeaderBehavior.all(),
-          queryStringBehavior: OriginRequestQueryStringBehavior.all(),
-          cookieBehavior: OriginRequestCookieBehavior.all(),
-        }),
+        originRequestPolicy: new OriginRequestPolicy(
+          this,
+          "OriginRequestPolicy",
+          {
+            headerBehavior: OriginRequestHeaderBehavior.all(),
+            queryStringBehavior: OriginRequestQueryStringBehavior.all(),
+            cookieBehavior: OriginRequestCookieBehavior.all(),
+          }
+        ),
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
       },
       additionalBehaviors: {
@@ -82,7 +93,10 @@ export class CdkRemixAppStack extends Stack {
       distribution,
       prune: true,
       sources: [Source.asset("public")],
-      cacheControl: [CacheControl.maxAge(Duration.days(365)), CacheControl.sMaxAge(Duration.days(365))],
+      cacheControl: [
+        CacheControl.maxAge(Duration.days(365)),
+        CacheControl.sMaxAge(Duration.days(365)),
+      ],
     });
   }
 }
